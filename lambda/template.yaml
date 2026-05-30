@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Box AI Pre-Screen Lambda - searches Box AI before Bedrock final answer
+
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.12
+    MemorySize: 256
+
+Resources:
+  BoxAiPrescreenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.handler
+      CodeUri: box_ai_prescreen/
+      Environment:
+        Variables:
+          BOX_ACCESS_TOKEN: ""
+          BOX_FOLDER_ID: "0"
+          BEDROCK_REGION: us-east-1
+          BEDROCK_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /ask
+            Method: post
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint for Box AI pre-screen
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask"
