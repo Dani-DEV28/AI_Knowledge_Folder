@@ -1,4 +1,7 @@
+import os
 from pathlib import Path
+from box_sdk_gen import BoxClient, BoxDeveloperTokenAuth
+from box_sdk_gen.managers.ai import CreateAiAskMode, AiItemAsk
 from services.box_service import download_all_text_from_box
 from db.metadata import get_assistant
 
@@ -8,22 +11,101 @@ CHUNK_SIZE = 500  # words per chunk
 
 def retrieve_chunks(assistant_id: str, question: str, top_k: int = 5) -> list:
     """
-    Keyword retrieval from two sources:
-    1. seed/         — pre-loaded RCW text files (always available, local fallback)
-    2. Box folder    — all .txt files in the assistant's Box folder (source of truth)
+    Two-stage retrieval:
+    1. Try Box AI pre-screen (semantic search + AI passage extraction)
+    2. Fall back to keyword search if Box AI is unavailable
 
-    Scores each chunk by word overlap with the question.
-    Returns top_k results sorted by score.
+    Box AI provides better results by understanding meaning, not just keywords.
     """
+    # Stage 1: Try Box AI pre-screen
+    try:
+        assistant = get_assistant(assistant_id)
+        folder_name = assistant["folder_name"] if assistant else assistant_id
+        results = _box_ai_prescreen(question, folder_name)
+        if results:
+            return results[:top_k]
+    except Exception:
+        pass  # Box AI unavailable, fall through to keyword search
+
+    # Stage 2: Keyword fallback
+    return _keyword_search(assistant_id, question, top_k)
+
+
+def _box_ai_prescreen(question: str, folder_name: str) -> list:
+    """Use Box AI to search and extract relevant passages."""
+    token = os.getenv("BOX_ACCESS_TOKEN", "")
+    if not token:
+        return []
+
+    auth = BoxDeveloperTokenAuth(token=token)
+    client = BoxClient(auth=auth)
+
+    # Find the folder ID
+    items = client.folders.get_folder_items("0")
+    folder_id = None
+    for item in items.entries:
+        if item.name == folder_name:
+            folder_id = item.id
+            break
+    if not folder_id:
+        return []
+
+    # Search for relevant files
+    search_results = client.search.search_for_content(
+        query=question,
+        ancestor_folder_ids=[folder_id],
+        content_types=["name", "description", "file_content"],
+        limit=5,
+    )
+
+    if not search_results.entries:
+        return []
+
+    # Use Box AI to extract relevant passages
+    ai_items = [
+        AiItemAsk(id=item.id, type="file")
+        for item in search_results.entries[:5]
+    ]
+
+    try:
+        ai_response = client.ai.create_ai_ask(
+            mode=CreateAiAskMode.MULTIPLE_ITEM_QA,
+            prompt=f"Extract the sections most relevant to: {question}",
+            items=ai_items,
+        )
+        return [{
+            "text": ai_response.answer,
+            "source_title": ", ".join(item.name for item in search_results.entries[:5]),
+            "source_url": "",
+            "score": 100,
+        }]
+    except Exception:
+        # Box AI ask failed — return raw file content as fallback
+        results = []
+        for item in search_results.entries[:5]:
+            try:
+                content = client.downloads.download_file(item.id)
+                text = content.read().decode("utf-8", errors="ignore")[:2000]
+                results.append({
+                    "text": text,
+                    "source_title": item.name,
+                    "source_url": "",
+                    "score": 50,
+                })
+            except Exception:
+                continue
+        return results
+
+
+def _keyword_search(assistant_id: str, question: str, top_k: int) -> list:
+    """Original keyword-based retrieval as fallback."""
     question_words = set(question.lower().split())
     results = []
 
-    # 1. Seed files (local fallback, always available)
     if SEED_DIR.exists():
         for file in SEED_DIR.glob("*.txt"):
             _score_file_local(file, question_words, results)
 
-    # 2. Box folder (source of truth for uploaded + crawled content)
     try:
         assistant = get_assistant(assistant_id)
         folder_name = assistant["folder_name"] if assistant else assistant_id
@@ -31,7 +113,7 @@ def retrieve_chunks(assistant_id: str, question: str, top_k: int = 5) -> list:
         for bf in box_files:
             _score_text(bf["filename"], bf["text"], question_words, results)
     except Exception:
-        pass  # Box unavailable — fall back to seed only
+        pass
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
