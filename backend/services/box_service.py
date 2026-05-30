@@ -63,3 +63,11 @@ def _get_or_create_folder(client: BoxClient, folder_name: str) -> str:
 
     folder = client.folders.create_folder(name=folder_name, parent={"id": "0"})
     return folder.id
+
+
+def delete_file_from_box(file_id: str) -> None:
+    """
+    Delete a file from Box by its file ID.
+    """
+    client = _get_client()
+    client.files.delete_file_by_id(file_id)

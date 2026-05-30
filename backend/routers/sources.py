@@ -96,3 +96,28 @@ def list_sources(assistant_id: str):
     Return all knowledge sources associated with an assistant.
     """
     return get_sources(assistant_id)
+
+
+@router.delete("/{source_id}")
+def delete_source(source_id: str, assistant_id: str):
+    """
+    Delete a source from metadata and from Box.
+    """
+    from db.metadata import delete_source_by_id, get_source_by_id
+    from services.box_service import delete_file_from_box
+
+    source = get_source_by_id(source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    # Delete from Box if it has a box_file_id
+    if source.get("box_file_id"):
+        try:
+            delete_file_from_box(source["box_file_id"])
+        except Exception:
+            pass  # Box deletion failure shouldn't block
+
+    # Delete from metadata
+    delete_source_by_id(source_id)
+
+    return {"status": "deleted", "source_id": source_id}

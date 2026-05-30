@@ -65,3 +65,21 @@ def save_source(
 def get_sources(assistant_id: str) -> list:
     data = _load()
     return [s for s in data["sources"] if s["assistant_id"] == assistant_id]
+
+
+def get_source_by_id(source_id: str) -> dict | None:
+    data = _load()
+    for s in data["sources"]:
+        if s["id"] == source_id:
+            return s
+    return None
+
+
+def delete_source_by_id(source_id: str) -> bool:
+    data = _load()
+    original_len = len(data["sources"])
+    data["sources"] = [s for s in data["sources"] if s["id"] != source_id]
+    if len(data["sources"]) < original_len:
+        _save(data)
+        return True
+    return False

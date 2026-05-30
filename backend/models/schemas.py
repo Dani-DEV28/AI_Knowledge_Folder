@@ -30,6 +30,7 @@ class AddWebsiteResponse(BaseModel):
 class ChatRequest(BaseModel):
     assistant_id: str
     question: str
+    history: Optional[List[dict]] = []  # [{"role": "user"|"assistant", "content": "..."}]
 
 
 class SourceChunk(BaseModel):

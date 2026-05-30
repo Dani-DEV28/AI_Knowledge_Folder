@@ -16,7 +16,10 @@ Do not provide legal advice.
 Do not use any outside knowledge."""
 
 
-def generate_answer(question: str, chunks: list) -> ChatResponse:
+def generate_answer(question: str, chunks: list, history: list = None) -> ChatResponse:
+    if history is None:
+        history = []
+
     if not chunks:
         return ChatResponse(answer=NOT_FOUND_RESPONSE, sources=[])
 
@@ -31,14 +34,14 @@ def generate_answer(question: str, chunks: list) -> ChatResponse:
 
     # Try Bedrock first, fall back to local summary if not configured
     try:
-        answer_text = _call_bedrock(question, chunks)
-    except (NoCredentialsError, EndpointResolutionError, ClientError, Exception) as e:
+        answer_text = _call_bedrock(question, chunks, history)
+    except (NoCredentialsError, EndpointResolutionError, ClientError, Exception):
         answer_text = _local_fallback(question, chunks)
 
     return ChatResponse(answer=answer_text, sources=sources)
 
 
-def _call_bedrock(question: str, chunks: list) -> str:
+def _call_bedrock(question: str, chunks: list, history: list) -> str:
     context = "\n\n".join(
         f"[Source: {c['source_title']}]\n{c['text']}" for c in chunks
     )
@@ -47,18 +50,31 @@ def _call_bedrock(question: str, chunks: list) -> str:
     model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
     client = boto3.client("bedrock-runtime", region_name=region)
 
-    # Using the Converse API (recommended for all Claude models)
+    # Build messages with conversation history for follow-up context
+    messages = []
+
+    # Add previous conversation turns (last 10 messages max to stay within limits)
+    for msg in history[-10:]:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role in ("user", "assistant") and content:
+            messages.append({
+                "role": role,
+                "content": [{"text": content}]
+            })
+
+    # Add current question with sources
+    messages.append({
+        "role": "user",
+        "content": [
+            {"text": f"Sources:\n{context}\n\nQuestion: {question}"}
+        ]
+    })
+
     response = client.converse(
         modelId=model_id,
         system=[{"text": SYSTEM_PROMPT}],
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"text": f"Sources:\n{context}\n\nQuestion: {question}"}
-                ]
-            }
-        ],
+        messages=messages,
         inferenceConfig={
             "maxTokens": 512,
             "temperature": 0.0,
@@ -69,12 +85,8 @@ def _call_bedrock(question: str, chunks: list) -> str:
 
 
 def _local_fallback(question: str, chunks: list) -> str:
-    """
-    Used when Bedrock is not configured.
-    Returns a plain summary built directly from the retrieved chunks.
-    """
     lines = [
-        f"Based on the available knowledge sources, here is what was found:\n"
+        "Based on the available knowledge sources, here is what was found:\n"
     ]
     for c in chunks:
         lines.append(f"[{c['source_title']}]\n{c['text'][:400]}\n")
