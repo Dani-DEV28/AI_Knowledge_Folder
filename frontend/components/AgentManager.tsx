@@ -7,10 +7,12 @@ interface AgentManagerProps {
   agent: Agent;
   onAddUrl: (agentId: string, url: string, prompt: string) => void;
   onUploadFile: (agentId: string, file: File) => void;
+  onDeleteUrl: (agentId: string, urlIndex: number) => void;
+  onDeleteFile: (agentId: string, fileId: string) => void;
   onBack: () => void;
 }
 
-export default function AgentManager({ agent, onAddUrl, onUploadFile, onBack }: AgentManagerProps) {
+export default function AgentManager({ agent, onAddUrl, onUploadFile, onDeleteUrl, onDeleteFile, onBack }: AgentManagerProps) {
   const [urlOpen, setUrlOpen] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("");
@@ -79,7 +81,16 @@ export default function AgentManager({ agent, onAddUrl, onUploadFile, onBack }: 
               {agent.urls.length > 0 && (
                 <ul className="list-unstyled mt-3 mb-0">
                   {agent.urls.map((url, i) => (
-                    <li key={i} className="text-sm text-gray-300 py-1 border-bottom border-dark-600">{url}</li>
+                    <li key={i} className="d-flex justify-content-between align-items-center text-sm text-gray-300 py-1 border-bottom border-dark-600">
+                      <span>{url}</span>
+                      <button
+                        onClick={() => onDeleteUrl(agent.id, i)}
+                        className="bg-transparent border-0 text-danger text-xs px-2"
+                        aria-label={`Delete URL ${url}`}
+                      >
+                        ✕
+                      </button>
+                    </li>
                   ))}
                 </ul>
               )}
@@ -106,8 +117,15 @@ export default function AgentManager({ agent, onAddUrl, onUploadFile, onBack }: 
               {agent.files.length > 0 && (
                 <ul className="list-unstyled mt-3 mb-0">
                   {agent.files.map((f) => (
-                    <li key={f.id} className="text-sm text-gray-300 py-1 border-bottom border-dark-600">
-                      {f.name} <span className="text-gray-500 text-xs">({(f.size / 1024).toFixed(1)} KB)</span>
+                    <li key={f.id} className="d-flex justify-content-between align-items-center text-sm text-gray-300 py-1 border-bottom border-dark-600">
+                      <span>{f.name} <span className="text-gray-500 text-xs">({(f.size / 1024).toFixed(1)} KB)</span></span>
+                      <button
+                        onClick={() => onDeleteFile(agent.id, f.id)}
+                        className="bg-transparent border-0 text-danger text-xs px-2"
+                        aria-label={`Delete file ${f.name}`}
+                      >
+                        ✕
+                      </button>
                     </li>
                   ))}
                 </ul>

@@ -70,6 +70,18 @@ export default function Home() {
     );
   };
 
+  const handleDeleteUrl = (agentId: string, urlIndex: number) => {
+    setAgents((prev) =>
+      prev.map((a) => (a.id === agentId ? { ...a, urls: a.urls.filter((_, i) => i !== urlIndex) } : a))
+    );
+  };
+
+  const handleDeleteFile = (agentId: string, fileId: string) => {
+    setAgents((prev) =>
+      prev.map((a) => (a.id === agentId ? { ...a, files: a.files.filter((f) => f.id !== fileId) } : a))
+    );
+  };
+
   return (
     <div className="d-flex vh-100">
       <Sidebar
@@ -94,6 +106,8 @@ export default function Home() {
           agent={selectedAgent}
           onAddUrl={handleAddUrlWithPrompt}
           onUploadFile={handleUploadFile}
+          onDeleteUrl={handleDeleteUrl}
+          onDeleteFile={handleDeleteFile}
           onBack={() => setView("chat")}
         />
       ) : (
