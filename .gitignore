@@ -13,6 +13,12 @@ backend/.env
 # Local metadata database
 backend/db/data.json
 
+# Crawled content (generated at runtime)
+backend/crawled/
+
+# Uploaded document text (generated at runtime)
+backend/uploaded/
+
 # Node
 node_modules/
 .next/

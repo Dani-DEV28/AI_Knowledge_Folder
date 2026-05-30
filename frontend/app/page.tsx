@@ -55,10 +55,17 @@ export default function Home() {
 
     // Call the backend /chat endpoint
     try {
+      // Build history from current chat messages
+      const currentChat = chats.find((c) => c.id === chatId);
+      const history = (currentChat?.messages || []).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const res = await fetch(`${API}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assistant_id: selectedAgentId, question: content }),
+        body: JSON.stringify({ assistant_id: selectedAgentId, question: content, history }),
       });
       const data = await res.json();
 
@@ -121,47 +128,76 @@ export default function Home() {
   };
 
   const handleAddUrlWithPrompt = async (agentId: string, url: string, _prompt: string) => {
-    // Trigger Apify crawl in backend
+    // Trigger Apify crawl in backend — waits for completion and auto-ingests
+    let result = { pages_ingested: 0, status: "error" };
     try {
-      await fetch(`${API}/sources/website`, {
+      const res = await fetch(`${API}/sources/website`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assistant_id: agentId, url }),
       });
+      result = await res.json();
     } catch {
-      // Continue even if crawl fails — show URL in UI
+      throw new Error("Crawl request failed");
     }
     setAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, urls: [...a.urls, url] } : a))
     );
+    return result;
   };
 
   const handleUploadFile = async (agentId: string, file: File) => {
     // Upload file to Box via backend
-    try {
-      const formData = new FormData();
-      formData.append("assistant_id", agentId);
-      formData.append("file", file);
-      await fetch(`${API}/sources/upload`, {
-        method: "POST",
-        body: formData,
-      });
-    } catch {
-      // Continue even if upload fails — show file in UI
-    }
+    const formData = new FormData();
+    formData.append("assistant_id", agentId);
+    formData.append("file", file);
+    const res = await fetch(`${API}/sources/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Upload failed");
     const uploaded = { id: Date.now().toString(), name: file.name, size: file.size, uploadedAt: Date.now() };
     setAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, files: [...a.files, uploaded] } : a))
     );
   };
 
-  const handleDeleteUrl = (agentId: string, urlIndex: number) => {
+  const handleDeleteUrl = async (agentId: string, urlIndex: number) => {
+    // Find the source in metadata and delete from Box
+    const url = agents.find((a) => a.id === agentId)?.urls[urlIndex];
+    if (url) {
+      try {
+        // Get sources to find the matching one
+        const res = await fetch(`${API}/sources?assistant_id=${agentId}`);
+        const sources = await res.json();
+        const match = sources.find((s: { source_url: string }) => s.source_url === url);
+        if (match) {
+          await fetch(`${API}/sources/${match.id}?assistant_id=${agentId}`, { method: "DELETE" });
+        }
+      } catch {
+        // Continue with UI removal even if backend fails
+      }
+    }
     setAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, urls: a.urls.filter((_, i) => i !== urlIndex) } : a))
     );
   };
 
-  const handleDeleteFile = (agentId: string, fileId: string) => {
+  const handleDeleteFile = async (agentId: string, fileId: string) => {
+    try {
+      // Get sources to find the matching one by filename
+      const file = agents.find((a) => a.id === agentId)?.files.find((f) => f.id === fileId);
+      if (file) {
+        const res = await fetch(`${API}/sources?assistant_id=${agentId}`);
+        const sources = await res.json();
+        const match = sources.find((s: { file_name: string }) => s.file_name === file.name);
+        if (match) {
+          await fetch(`${API}/sources/${match.id}?assistant_id=${agentId}`, { method: "DELETE" });
+        }
+      }
+    } catch {
+      // Continue with UI removal even if backend fails
+    }
     setAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, files: a.files.filter((f) => f.id !== fileId) } : a))
     );
