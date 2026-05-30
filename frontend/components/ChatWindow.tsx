@@ -56,7 +56,7 @@ export default function ChatWindow({ chat, onSend, onOpenSidebar }: ChatWindowPr
                       ? "bg-cyan-600 text-white"
                       : "bg-dark-700 text-gray-100"
                   }`}
-                  style={{ maxWidth: "80%" }}
+                  style={{ maxWidth: "80%", whiteSpace: "pre-wrap" }}
                 >
                   {msg.content}
                   {msg.sources && msg.sources.length > 0 && (
