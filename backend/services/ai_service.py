@@ -1,7 +1,11 @@
-import boto3
-import json
 import os
+import boto3
+from botocore.exceptions import NoCredentialsError, EndpointResolutionError, ClientError
 from models.schemas import ChatResponse, SourceChunk
+
+NOT_FOUND_RESPONSE = (
+    "I could not find information related to that question in the selected knowledge folder."
+)
 
 SYSTEM_PROMPT = """You are a trusted AI assistant.
 Answer ONLY using the provided source excerpts below.
@@ -11,31 +15,10 @@ Always include source citations at the end of your answer.
 Do not provide legal advice.
 Do not use any outside knowledge."""
 
-NOT_FOUND_RESPONSE = (
-    "I could not find information related to that question in the selected knowledge folder."
-)
-
 
 def generate_answer(question: str, chunks: list) -> ChatResponse:
-    """
-    Build a grounded prompt from retrieved chunks and call AWS Bedrock.
-    Falls back to NOT_FOUND_RESPONSE if no chunks are available.
-    """
     if not chunks:
         return ChatResponse(answer=NOT_FOUND_RESPONSE, sources=[])
-
-    context = "\n\n".join(
-        f"[Source: {c['source_title']}]\n{c['text']}" for c in chunks
-    )
-
-    prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
-        f"Sources:\n{context}\n\n"
-        f"Question: {question}\n"
-        f"Answer:"
-    )
-
-    answer_text = _call_bedrock(prompt)
 
     sources = [
         SourceChunk(
@@ -46,32 +29,58 @@ def generate_answer(question: str, chunks: list) -> ChatResponse:
         for c in chunks
     ]
 
+    # Try Bedrock first, fall back to local summary if not configured
+    try:
+        answer_text = _call_bedrock(question, chunks)
+    except (NoCredentialsError, EndpointResolutionError, ClientError, Exception) as e:
+        answer_text = _local_fallback(question, chunks)
+
     return ChatResponse(answer=answer_text, sources=sources)
 
 
-def _call_bedrock(prompt: str) -> str:
-    """
-    Call AWS Bedrock (Claude Instant). Returns the model's completion text.
-    If Bedrock is unavailable, raises an exception — swap in another LLM here as fallback.
-    """
+def _call_bedrock(question: str, chunks: list) -> str:
+    context = "\n\n".join(
+        f"[Source: {c['source_title']}]\n{c['text']}" for c in chunks
+    )
+
     region = os.getenv("BEDROCK_REGION", "us-east-1")
+    model_id = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
     client = boto3.client("bedrock-runtime", region_name=region)
 
-    body = json.dumps(
-        {
-            "prompt": f"\n\nHuman: {prompt}\n\nAssistant:",
-            "max_tokens_to_sample": 512,
+    # Using the Converse API (recommended for all Claude models)
+    response = client.converse(
+        modelId=model_id,
+        system=[{"text": SYSTEM_PROMPT}],
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"text": f"Sources:\n{context}\n\nQuestion: {question}"}
+                ]
+            }
+        ],
+        inferenceConfig={
+            "maxTokens": 512,
             "temperature": 0.0,
-            "stop_sequences": ["\n\nHuman:"],
         }
     )
 
-    response = client.invoke_model(
-        modelId="anthropic.claude-instant-v1",
-        body=body,
-        contentType="application/json",
-        accept="application/json",
-    )
+    return response["output"]["message"]["content"][0]["text"].strip()
 
-    result = json.loads(response["body"].read())
-    return result.get("completion", NOT_FOUND_RESPONSE).strip()
+
+def _local_fallback(question: str, chunks: list) -> str:
+    """
+    Used when Bedrock is not configured.
+    Returns a plain summary built directly from the retrieved chunks.
+    """
+    lines = [
+        f"Based on the available knowledge sources, here is what was found:\n"
+    ]
+    for c in chunks:
+        lines.append(f"[{c['source_title']}]\n{c['text'][:400]}\n")
+
+    lines.append(
+        "\nNote: This response was generated without an AI model. "
+        "Configure BEDROCK credentials in .env for full AI-generated answers."
+    )
+    return "\n".join(lines)
