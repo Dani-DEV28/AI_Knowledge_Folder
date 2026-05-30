@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from models.schemas import AddWebsiteRequest, AddWebsiteResponse
 from services.apify_service import trigger_crawl
 from services.box_service import upload_file_to_box
@@ -12,8 +12,11 @@ async def add_website(body: AddWebsiteRequest):
     """
     Accept a website URL, trigger an Apify crawl, and store the result in Box.
     """
-    result = await trigger_crawl(body.url, body.assistant_id)
-    return result
+    try:
+        result = await trigger_crawl(body.url, body.assistant_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/upload")
