@@ -1,418 +1,491 @@
-# RCW Navigator AI
+# AI Knowledge Folder
 
-**RCW Navigator AI** is an AI-powered knowledge folder that lets users ask natural-language questions about selected Washington State RCW laws and receive answers sourced from official RCW documents.
+> Build trusted AI assistants from Box folders, websites, and documents.
 
-Instead of manually opening multiple legal pages and using `Ctrl + F`, users can ask questions like:
+AI Knowledge Folder is a framework for creating domain-specific AI assistants powered by content stored in Box.
 
-* “Do drivers have to obey a police officer directing traffic?”
-* “What does Washington law say about commercial text messages?”
-* “What section talks about public records?”
-* “Where is this rule mentioned in the RCW?”
+Instead of relying on general-purpose AI knowledge, AI Knowledge Folder grounds responses in curated documents, uploaded files, and web content collected through Apify.
 
-The app searches a limited knowledge folder, retrieves the most relevant RCW text, and generates a short answer with source references.
+The platform enables administrators to create specialized AI assistants without building a custom RAG application for every use case.
 
-> **Disclaimer:** RCW Navigator AI summarizes public legal information. It is not legal advice.
+**RCW Navigator AI** serves as the MVP demonstration of the platform, showing how an AI assistant can answer questions about Washington State RCW laws using only trusted source documents.
 
 ---
 
-## Project Overview
+# Vision
 
-RCW Navigator AI is built around the idea of an **AI Knowledge Folder**.
+Organizations already store knowledge in documents.
 
-The system collects public Washington State RCW pages, stores them in a Box folder, and allows users to ask questions against only those stored documents. This keeps the AI grounded in a limited and trusted knowledge base instead of answering from general internet knowledge.
+The challenge is making that knowledge searchable, discoverable, and conversational.
 
----
+AI Knowledge Folder transforms a Box folder into an AI-powered knowledge assistant that can:
 
-## Problem
+* Answer questions
+* Cite sources
+* Search uploaded documents
+* Search scraped websites
+* Stay grounded in trusted content
+* Be configured for different domains
 
-Legal information is public, but it can be hard to search and understand quickly.
+Examples:
 
-Users often need to:
-
-* Find the right RCW section
-* Understand what a law says in simple language
-* Search across multiple RCW pages
-* Keep track of where an answer came from
-
-Traditional keyword search is useful, but it requires knowing the exact words to search for. RCW Navigator AI allows users to ask questions naturally and receive sourced answers.
-
----
-
-## Solution
-
-RCW Navigator AI provides a simple question-answering tool for Washington RCW documents.
-
-The user asks a question, and the app:
-
-1. Searches the Box knowledge folder
-2. Finds the most relevant RCW document chunks
-3. Generates a short AI answer
-4. Shows the source RCW section, title, and URL
-5. Refuses to answer when the information is not found in the selected documents
+* RCW Navigator AI
+* HR Policy Assistant
+* Product Documentation Assistant
+* Compliance Navigator
+* Internal Knowledge Bot
+* Legal Research Assistant
 
 ---
 
-## Example Use Cases
+# Problem
 
-### Traffic Law Search
+Organizations struggle to find information buried across:
 
-User asks:
+* PDFs
+* Internal documents
+* Policy manuals
+* Knowledge bases
+* Public websites
+* Reference materials
 
-> Do drivers have to obey police officers?
+Traditional search requires users to know:
 
-The app searches the stored RCW traffic law documents and returns a short answer with the relevant RCW source.
+* Exact keywords
+* File names
+* Document locations
 
-### Consumer Protection Search
-
-User asks:
-
-> Can a business send commercial text messages to Washington residents?
-
-The app retrieves the relevant RCW section and summarizes the rule.
-
-### Public Records Search
-
-User asks:
-
-> What does the RCW say about public records?
-
-The app searches the selected public records documents and returns a sourced answer.
+General-purpose AI can answer questions, but often lacks access to organization-specific content.
 
 ---
 
-## Key Features
+# Solution
 
-* Natural-language search over RCW documents
-* Answers grounded only in selected source files
-* Source citations with RCW section numbers and URLs
-* Box folder used as the knowledge base
-* Apify used to collect public RCW pages
-* Simple web interface for asking questions
-* “I could not find that in the documents” response when no source is available
-* Legal disclaimer included in the answer flow
+AI Knowledge Folder allows administrators to create AI assistants backed by trusted content.
+
+The platform supports two primary content sources:
+
+## Website Content
+
+Administrators can provide URLs.
+
+Apify Actors:
+
+* Crawl websites
+* Extract text
+* Normalize content
+* Save results into Box
+
+## Uploaded Documents
+
+Administrators can upload:
+
+* PDFs
+* Word documents
+* Text files
+* JSON files
+* Knowledge exports
+
+The files become part of the assistant's searchable knowledge base.
 
 ---
 
-## Tech Stack
-
-* **Apify** — Scrapes public RCW pages and extracts text
-* **Box.dev** — Stores scraped RCW documents in a secure knowledge folder
-* **AWS Kiro** — Helps generate, organize, and build the application workflow
-* **Python / JavaScript** — Backend and frontend logic
-* **AI Model** — Generates answers from retrieved RCW text
-* **JSON / TXT Files** — Stored RCW document format
-
----
-
-## How It Works
+# Platform Architecture
 
 ```text
-Public RCW Website
-        ↓
-Apify Actor
-        ↓
-Extracted RCW Text
-        ↓
-Box Knowledge Folder
-        ↓
-Search / Retrieval Layer
-        ↓
-AI Answer Generator
-        ↓
-Answer + Source Citation
+                Admin Portal
+                      |
+         +------------+------------+
+         |                         |
+         v                         v
+   Website URLs           Document Uploads
+         |                         |
+         v                         v
+      Apify                    Box Storage
+         |                         |
+         +------------+------------+
+                      |
+                      v
+            AI Knowledge Folder
+                      |
+             Search & Retrieval
+                      |
+                      v
+                AI Assistant
+                      |
+                      v
+            Answer + Citations
 ```
 
 ---
 
-## Data Flow
+# Core Platform Features
 
-1. **Scrape RCW Pages**
+## Knowledge Folder Creation
 
-   Apify collects selected RCW pages such as traffic laws, consumer protection rules, or public records laws.
+Administrators can create a new AI assistant.
 
-2. **Store in Box**
-
-   The scraped content is saved in a Box folder as text or JSON files.
-
-3. **Ask a Question**
-
-   The user enters a natural-language question in the app.
-
-4. **Retrieve Relevant Text**
-
-   The app searches the stored RCW files and selects the most relevant chunks.
-
-5. **Generate an Answer**
-
-   The AI generates a short answer based only on the retrieved source text.
-
-6. **Show Sources**
-
-   The app displays the RCW citation, document title, and original source URL.
-
----
-
-## Example Folder Structure
+Example:
 
 ```text
-boxbrain-rcw-demo/
-├── rcw_46_61_rules_of_the_road.json
-├── rcw_46_61_020.txt
-├── rcw_19_190_060_commercial_text_messages.txt
-├── rcw_42_56_public_records_act.json
-└── demo_questions.json
+Assistant Name:
+RCW Navigator AI
+
+Description:
+Washington State law assistant
+
+Knowledge Folder:
+box://rcw-laws
 ```
 
 ---
 
-## Example Scraped Document Format
+## Website Ingestion
 
-```json
-{
-  "title": "RCW 46.61.020",
-  "section": "Refusal to give information to or cooperate with officer",
-  "chapter": "Chapter 46.61 RCW",
-  "source_url": "https://app.leg.wa.gov/rcw/default.aspx?cite=46.61.020",
-  "text": "Full extracted RCW text goes here...",
-  "scraped_at": "2026-05-29"
-}
+Administrators provide one or more URLs.
+
+Example:
+
+```text
+https://app.leg.wa.gov/rcw
+https://agency.example.gov/policies
 ```
+
+The platform uses Apify to:
+
+* Crawl pages
+* Extract content
+* Store results in Box
+* Associate content with the assistant
+
+---
+
+## Document Upload
+
+Administrators can upload:
+
+* PDFs
+* DOCX
+* TXT
+* JSON
+
+The uploaded files become searchable knowledge sources.
+
+---
+
+## AI Chat Interface
+
+Users ask questions naturally.
+
+Example:
+
+```text
+What does the policy say about remote work?
+
+How many vacation days do employees receive?
+
+What does Washington law say about public records?
+```
+
+The assistant searches only its assigned knowledge folder.
+
+---
+
+## Source Citations
+
+Every answer includes supporting sources.
+
+Example:
+
+```text
+Answer:
+Employees may work remotely up to three days per week.
+
+Sources:
+Employee Handbook.pdf
+Page 12
+```
+
+The system avoids unsupported answers.
+
+---
+
+## Grounded Responses
+
+If information cannot be found:
+
+```text
+I could not find information related to that question in the selected knowledge folder.
+```
+
+This prevents hallucinated responses.
+
+---
+
+# Admin Portal
+
+The Admin Portal is the primary MVP feature.
+
+Administrators can:
+
+## Create Assistants
+
+```text
++ New Assistant
+```
+
+Example:
+
+```text
+RCW Navigator AI
+```
+
+---
+
+## Configure Data Sources
+
+### Add Website
+
+```text
+https://app.leg.wa.gov/rcw
+```
+
+Trigger:
+
+```text
+Run Apify Crawl
+```
+
+---
+
+### Upload Documents
+
+Drag-and-drop support for:
+
+```text
+PDF
+DOCX
+TXT
+JSON
+```
+
+Uploaded files are stored directly in Box.
+
+---
+
+## Manage Knowledge Sources
+
+View:
+
+* Uploaded files
+* Scraped pages
+* Crawl status
+* Last update time
+
+---
+
+# Demo Implementation: RCW Navigator AI
+
+RCW Navigator AI demonstrates how the platform can create a legal research assistant.
+
+The assistant is configured using:
+
+## Website Sources
+
+```text
+https://app.leg.wa.gov/rcw
+```
+
+Selected RCW chapters:
+
+* Traffic laws
+* Consumer protection
+* Public records
+
+---
+
+## Uploaded Sources
+
+Optional:
+
+* Legal memos
+* Research notes
+* Internal reference documents
 
 ---
 
 ## Example Questions
 
 ```text
-What does the RCW say about obeying police officers?
-Can businesses send commercial texts to Washington residents?
-What is the Public Records Act?
-Which RCW section talks about rules of the road?
-What does Washington law say about refusing to cooperate with an officer?
+Do drivers have to obey police officers?
+
+What does Washington law say about commercial text messages?
+
+What section discusses public records?
+
+Where is this requirement found in the RCW?
 ```
 
 ---
 
-## Example Answer Format
+## Example Response
 
 ```text
 Question:
-Do drivers have to obey police officers?
+Do drivers have to obey police officers directing traffic?
 
 Answer:
-Washington law includes rules requiring drivers to cooperate with law enforcement officers in traffic-related situations. The exact requirement depends on the specific RCW section and context.
+Washington traffic laws include provisions requiring drivers to comply with lawful directions provided by authorized officers directing traffic.
 
 Source:
-RCW 46.61.020 — Refusal to give information to or cooperate with officer
-https://app.leg.wa.gov/rcw/default.aspx?cite=46.61.020
-
-Disclaimer:
-This is a summary of public legal information and is not legal advice.
+RCW 46.61
+https://app.leg.wa.gov/rcw
 ```
-
----
-
-## 5-Hour MVP Scope
-
-The goal of the first version is to build a simple but working demo.
-
-### MVP Features
-
-* Scrape 10–30 selected RCW pages
-* Save scraped pages to Box
-* Display a simple question input
-* Search stored RCW files
-* Generate an answer from the retrieved content
-* Show source citation
-* Include legal disclaimer
-
-### Out of Scope for MVP
-
-* Scraping the entire RCW website
-* User authentication
-* Advanced legal reasoning
-* Legal recommendations
-* Real-time law updates
-* Production-grade compliance review
-
----
-
-## Recommended Demo Dataset
-
-For a quick demo, use a small set of RCW topics:
-
-### Traffic Laws
-
-* Chapter 46.61 RCW — Rules of the Road
-* Useful for questions about driving, officers, road signs, and traffic rules
-
-### Consumer Protection
-
-* RCW 19.190.060 — Commercial electronic text messages
-* Useful for questions about business texting rules
-
-### Public Records
-
-* Chapter 42.56 RCW — Public Records Act
-* Useful for questions about public records and disclosure
-
----
-
-## Team Roles
-
-### Person 1 — Data Pipeline
-
-Responsible for:
-
-* Setting up the Apify actor
-* Scraping selected RCW pages
-* Cleaning extracted text
-* Saving output as JSON or TXT
-* Uploading files to Box
-
-### Person 2 — App + AI Layer
-
-Responsible for:
-
-* Building the simple frontend
-* Connecting to Box files
-* Implementing search/retrieval
-* Sending relevant chunks to the AI model
-* Displaying answers and sources
-
----
-
-## Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/rcw-navigator-ai.git
-cd rcw-navigator-ai
-```
-
-### 2. Create Environment File
-
-Create a `.env` file:
-
-```env
-BOX_CLIENT_ID=your_box_client_id
-BOX_CLIENT_SECRET=your_box_client_secret
-BOX_DEVELOPER_TOKEN=your_box_developer_token
-BOX_FOLDER_ID=your_box_folder_id
-
-APIFY_TOKEN=your_apify_token
-AI_API_KEY=your_ai_api_key
-```
-
-### 3. Install Dependencies
-
-Example for a Python backend:
-
-```bash
-pip install -r requirements.txt
-```
-
-Example for a JavaScript frontend:
-
-```bash
-npm install
-```
-
-### 4. Run the App
-
-```bash
-npm run dev
-```
-
-or:
-
-```bash
-python app.py
-```
-
----
-
-## Possible API Routes
-
-```text
-GET /files
-Returns files from the selected Box folder.
-
-POST /ask
-Accepts a user question and returns an AI answer with sources.
-
-POST /scrape
-Runs or triggers an Apify actor for selected RCW URLs.
-
-POST /upload
-Uploads scraped RCW files to Box.
-```
-
----
-
-## Example `/ask` Request
-
-```json
-{
-  "question": "Can businesses send commercial texts to Washington residents?"
-}
-```
-
----
-
-## Example `/ask` Response
-
-```json
-{
-  "answer": "Washington law restricts businesses from sending certain commercial electronic text messages to Washington residents.",
-  "sources": [
-    {
-      "title": "RCW 19.190.060",
-      "url": "https://app.leg.wa.gov/rcw/default.aspx?cite=19.190.060"
-    }
-  ],
-  "disclaimer": "This is a summary of public legal information and is not legal advice."
-}
-```
-
----
-
-## Why This Project Matters
-
-RCW Navigator AI shows how AI can make public information easier to search while still staying grounded in source documents.
-
-This project is useful for:
-
-* Citizens trying to understand public laws
-* Students researching Washington law
-* Legal support teams organizing reference documents
-* Government or nonprofit teams creating internal knowledge tools
-* Hackathon teams demonstrating source-backed AI search
-
----
-
-## Future Improvements
-
-* Add semantic search with embeddings
-* Add Box metadata for RCW title, chapter, and section
-* Add automatic update checks for changed RCW pages
-* Add document upload support for custom legal files
-* Add user authentication
-* Add confidence scoring
-* Add side-by-side source highlighting
-* Add support for WAC documents
-* Add export to PDF report
-* Add chat history
 
 ---
 
 ## Legal Disclaimer
 
-RCW Navigator AI is for informational and educational purposes only. It summarizes public legal text and provides source references, but it does not provide legal advice. Users should consult a licensed attorney or official government source for legal decisions.
+RCW Navigator AI summarizes public legal information and is intended for educational purposes only.
+
+It does not provide legal advice.
 
 ---
 
-## Project Pitch
+# Technology Stack
 
-RCW Navigator AI is a source-backed AI search tool for Washington State laws. It uses Apify to collect public RCW pages, Box.dev to store them in a knowledge folder, and AI to answer user questions only from those documents. The result is a lightweight legal knowledge assistant that feels like `Ctrl + F` across a law folder, but with natural-language answers and source citations.
+## Box
 
+Acts as the system of record.
+
+Responsibilities:
+
+* Knowledge folder storage
+* Uploaded document management
+* Assistant content repository
+
+---
+
+## Apify
+
+Responsible for:
+
+* Website crawling
+* Content extraction
+* Data collection
+* Scheduled updates
+
+---
+
+## AWS Bedrock
+
+Provides:
+
+* Question answering
+* Summarization
+* Citation-aware responses
+* Grounded generation
+
+---
+
+## AWS Kiro
+
+Accelerates development through:
+
+* Project scaffolding
+* API generation
+* Workflow creation
+* Documentation generation
+* Testing support
+
+---
+
+## AWS Lambda
+
+Handles:
+
+* Ingestion workflows
+* File processing
+* Assistant orchestration
+* Scheduled updates
+
+---
+
+# MVP Scope (5-Hour Hackathon)
+
+## Primary Goal
+
+Build the AI Knowledge Folder platform.
+
+---
+
+## MVP Features
+
+### Admin Portal
+
+* Create assistant
+* Add website URLs
+* Upload documents
+* View knowledge sources
+
+### Knowledge Ingestion
+
+* Crawl websites with Apify
+* Upload files to Box
+* Store metadata
+
+### AI Assistant
+
+* Ask questions
+* Retrieve relevant content
+* Generate source-backed answers
+* Display citations
+
+### Demo Assistant
+
+* RCW Navigator AI
+
+---
+
+## Out of Scope
+
+* User authentication
+* Multi-tenant support
+* Large-scale crawling
+* Fine-tuning models
+* Complex permissions
+* Advanced analytics
+
+---
+
+# Future Enhancements
+
+* Multiple AI assistants
+* Assistant templates
+* Scheduled recrawling
+* Semantic search with embeddings
+* Box metadata integration
+* Role-based access control
+* Confidence scoring
+* Highlighted source excerpts
+* Exportable reports
+* Chat history
+* Assistant marketplace
+
+---
+
+# Why This Project Matters
+
+Most AI assistants are built for a single purpose.
+
+AI Knowledge Folder provides a reusable framework for creating many assistants from the same platform.
+
+RCW Navigator AI demonstrates one implementation, but the same architecture can power:
+
+* Legal assistants
+* HR assistants
+* Compliance assistants
+* Product documentation assistants
+* Internal knowledge bots
+
+The result is a scalable platform that transforms Box folders into trusted, source-backed AI assistants.
