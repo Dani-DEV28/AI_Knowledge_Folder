@@ -1,0 +1,28 @@
+RCW 19.190 — Commercial Electronic Mail
+Source: https://app.leg.wa.gov/rcw/default.aspx?cite=19.190
+
+RCW 19.190.010 — Definitions
+As used in this chapter:
+- "Commercial electronic mail message" means an electronic mail message sent for the purpose of promoting real property, goods, or services for sale or lease.
+- "Initiate the transmission" means to originate an electronic mail message or to procure the origination of the message.
+- "Electronic mail address" means a destination, commonly expressed as a string of characters, consisting of a unique user name or mailbox and a reference to an internet domain.
+
+RCW 19.190.020 — Prohibition on deceptive commercial electronic mail
+No person may initiate the transmission, conspire with another to initiate the transmission, or assist the transmission of a commercial electronic mail message from a computer located in Washington or to an electronic mail address that the sender knows, or has reason to know, is held by a Washington resident that:
+(1) Uses a third party's internet domain name without permission of the third party, or otherwise misrepresents or obscures any information in identifying the point of origin or the transmission path of a commercial electronic mail message.
+(2) Contains false or misleading information in the subject line.
+
+RCW 19.190.030 — Required labeling
+A person who sends a commercial electronic mail message must include in the subject line of the message the characters "ADV:" as the first four characters. If the message contains information that may only be viewed by adults, the subject line must begin with "ADV:ADLT".
+
+RCW 19.190.040 — Opt-out requirement
+A commercial electronic mail message must include a valid return electronic mail address or other internet-based mechanism that allows the recipient to request that no further commercial electronic mail messages be sent to that address. The sender must honor such a request within ten days.
+
+RCW 19.190.090 — Violation — Civil action
+Any person who is a resident of this state and who receives a commercial electronic mail message that violates this chapter may bring a civil action to recover the actual damages sustained by the person, or liquidated damages of five hundred dollars, whichever is greater.
+
+Demo questions this content supports:
+- What does Washington law say about commercial text messages?
+- What does Washington law say about spam email?
+- Do commercial emails need to include an opt-out option?
+- What is the penalty for sending illegal commercial email in Washington?
