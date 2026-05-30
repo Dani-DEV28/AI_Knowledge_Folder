@@ -18,6 +18,7 @@ interface SidebarProps {
   onUploadFile: (agentId: string, file: File) => void;
   open: boolean;
   onClose: () => void;
+  onManage: () => void;
 }
 
 export default function Sidebar({
@@ -35,6 +36,7 @@ export default function Sidebar({
   onUploadFile,
   open,
   onClose,
+  onManage,
 }: SidebarProps) {
   const [newAgentName, setNewAgentName] = useState("");
   const [urlInput, setUrlInput] = useState("");
@@ -61,17 +63,26 @@ export default function Sidebar({
 
         {/* Model/Agent Selector */}
         <div className="p-3 border-bottom border-dark-600">
-          <select
-            value={selectedAgentId}
-            onChange={(e) => onSelectAgent(e.target.value)}
-            className="w-100 bg-dark-700 text-white border border-dark-500 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
-          >
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name}
-              </option>
-            ))}
-          </select>
+          <div className="d-flex gap-2">
+            <select
+              value={selectedAgentId}
+              onChange={(e) => onSelectAgent(e.target.value)}
+              className="flex-grow-1 bg-dark-700 text-white border border-dark-500 rounded px-3 py-2 text-sm focus:outline-none focus:border-cyan-500"
+            >
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={onManage}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-2 py-2 rounded border-0"
+              title="Manage Agent"
+            >
+              ⚙
+            </button>
+          </div>
         </div>
 
         {/* New Chat Button */}

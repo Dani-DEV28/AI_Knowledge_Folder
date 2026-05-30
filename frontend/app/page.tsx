@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import ChatWindow from "@/components/ChatWindow";
+import AgentManager from "@/components/AgentManager";
 import { Agent, Chat, Message } from "@/types";
 
 export default function Home() {
@@ -14,8 +15,10 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [adminVisible, setAdminVisible] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [view, setView] = useState<"chat" | "manage">("chat");
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
+  const selectedAgent = agents.find((a) => a.id === selectedAgentId)!;
 
   const handleNewChat = () => {
     const chat: Chat = {
@@ -54,6 +57,12 @@ export default function Home() {
     );
   };
 
+  const handleAddUrlWithPrompt = (agentId: string, url: string, _prompt: string) => {
+    setAgents((prev) =>
+      prev.map((a) => (a.id === agentId ? { ...a, urls: [...a.urls, url] } : a))
+    );
+  };
+
   const handleUploadFile = (agentId: string, file: File) => {
     const uploaded = { id: Date.now().toString(), name: file.name, size: file.size, uploadedAt: Date.now() };
     setAgents((prev) =>
@@ -70,16 +79,26 @@ export default function Home() {
         onAddAgent={handleAddAgent}
         chats={chats.filter((c) => c.agentId === selectedAgentId)}
         activeChatId={activeChatId}
-        onSelectChat={setActiveChatId}
-        onNewChat={handleNewChat}
+        onSelectChat={(id) => { setActiveChatId(id); setView("chat"); }}
+        onNewChat={() => { handleNewChat(); setView("chat"); }}
         adminVisible={adminVisible}
         onToggleAdmin={() => setAdminVisible(!adminVisible)}
         onAddUrl={handleAddUrl}
         onUploadFile={handleUploadFile}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onManage={() => { setView("manage"); setSidebarOpen(false); }}
       />
-      <ChatWindow chat={activeChat} onSend={handleSendMessage} onOpenSidebar={() => setSidebarOpen(true)} />
+      {view === "manage" ? (
+        <AgentManager
+          agent={selectedAgent}
+          onAddUrl={handleAddUrlWithPrompt}
+          onUploadFile={handleUploadFile}
+          onBack={() => setView("chat")}
+        />
+      ) : (
+        <ChatWindow chat={activeChat} onSend={handleSendMessage} onOpenSidebar={() => setSidebarOpen(true)} />
+      )}
     </div>
   );
 }
