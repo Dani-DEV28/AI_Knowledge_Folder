@@ -2,15 +2,15 @@ import httpx
 import os
 from db.metadata import save_source
 
-# cheerio-scraper is available on paid Apify plans and works well for text extraction
-ACTOR_ID = "apify~cheerio-scraper"
+# playwright-scraper is a free public actor available on all Apify plans
+ACTOR_ID = "apify~playwright-scraper"
 
 
 async def trigger_crawl(url: str, assistant_id: str) -> dict:
     """
-    Trigger an Apify crawl for the given URL.
+    Trigger an Apify crawl for the given URL using playwright-scraper (free).
+    Extracts page URL, title, and body text.
     Token is passed via Authorization header (not in the URL).
-    Saves the source record to metadata and returns the run ID and status.
     """
     token = os.getenv("APIFY_API_TOKEN", "")
     if not token:
@@ -25,15 +25,14 @@ async def trigger_crawl(url: str, assistant_id: str) -> dict:
 
     payload = {
         "startUrls": [{"url": url}],
-        "maxCrawlPages": 10,
-        "pageFunction": """async function pageFunction(context) {
-    const { $, request } = context;
-    return {
-        url: request.url,
-        title: $('title').text().trim(),
-        text: $('body').text().replace(/\\s+/g, ' ').trim().slice(0, 5000)
-    };
-}"""
+        "maxPagesPerCrawl": 10,
+        "pageFunction": (
+            "async function pageFunction({ page, request }) {"
+            "  const title = await page.title();"
+            "  const text = await page.evaluate(() => document.body.innerText);"
+            "  return { url: request.url, title, text: text.slice(0, 5000) };"
+            "}"
+        ),
     }
 
     async with httpx.AsyncClient(timeout=30) as client:
