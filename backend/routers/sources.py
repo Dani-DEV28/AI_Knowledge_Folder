@@ -3,7 +3,7 @@ from models.schemas import AddWebsiteRequest, AddWebsiteResponse
 from services.apify_service import trigger_crawl, ingest_run_results
 from services.box_service import upload_file_to_box
 from services.document_service import extract_text, save_uploaded_text
-from db.metadata import save_source, get_sources
+from db.metadata import save_source, get_sources, get_assistant
 
 router = APIRouter(prefix="/sources", tags=["Sources"])
 
@@ -47,6 +47,10 @@ async def upload_document(
     """
     content = await file.read()
 
+    # Resolve Box folder name from assistant record (use name, not UUID)
+    assistant = get_assistant(assistant_id)
+    folder_name = assistant["folder_name"] if assistant else assistant_id
+
     # Extract text from the document
     text = ""
     text_error = None
@@ -58,7 +62,7 @@ async def upload_document(
     # Upload original file to Box
     box_file_id = None
     try:
-        box_file_id = upload_file_to_box(file.filename, content, assistant_id)
+        box_file_id = upload_file_to_box(file.filename, content, folder_name)
     except Exception:
         pass
 
@@ -67,7 +71,7 @@ async def upload_document(
     if text:
         txt_filename = file.filename.rsplit(".", 1)[0] + "_extracted.txt"
         try:
-            text_box_id = upload_file_to_box(txt_filename, text.encode("utf-8"), assistant_id)
+            text_box_id = upload_file_to_box(txt_filename, text.encode("utf-8"), folder_name)
         except Exception:
             pass
 

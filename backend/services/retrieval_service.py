@@ -1,5 +1,6 @@
 from pathlib import Path
 from services.box_service import download_all_text_from_box
+from db.metadata import get_assistant
 
 SEED_DIR = Path(__file__).parent.parent / "seed"
 CHUNK_SIZE = 500  # words per chunk
@@ -24,7 +25,9 @@ def retrieve_chunks(assistant_id: str, question: str, top_k: int = 5) -> list:
 
     # 2. Box folder (source of truth for uploaded + crawled content)
     try:
-        box_files = download_all_text_from_box(assistant_id)
+        assistant = get_assistant(assistant_id)
+        folder_name = assistant["folder_name"] if assistant else assistant_id
+        box_files = download_all_text_from_box(folder_name)
         for bf in box_files:
             _score_text(bf["filename"], bf["text"], question_words, results)
     except Exception:

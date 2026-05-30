@@ -1,7 +1,7 @@
 import httpx
 import os
 import re
-from db.metadata import save_source
+from db.metadata import save_source, get_assistant
 from services.box_service import upload_file_to_box
 
 # playwright-scraper is a free public actor available on all Apify plans
@@ -116,6 +116,9 @@ async def ingest_run_results(run_id: str, assistant_id: str) -> dict:
         }
 
     # Save each page as a .txt file and upload to Box
+    assistant = get_assistant(assistant_id)
+    folder_name = assistant["folder_name"] if assistant else assistant_id
+
     pages_ingested = 0
     for item in items:
         page_url = item.get("url", "unknown")
@@ -133,7 +136,7 @@ async def ingest_run_results(run_id: str, assistant_id: str) -> dict:
         # Upload to Box (source of truth)
         box_file_id = None
         try:
-            box_file_id = upload_file_to_box(filename, content.encode("utf-8"), assistant_id)
+            box_file_id = upload_file_to_box(filename, content.encode("utf-8"), folder_name)
         except Exception:
             pass
 
