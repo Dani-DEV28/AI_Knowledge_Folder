@@ -29,6 +29,27 @@ def upload_file_to_box(filename: str, content: bytes, folder_name: str) -> str:
     return uploaded.entries[0].id
 
 
+def download_all_text_from_box(folder_name: str) -> list:
+    """
+    Download all .txt files from a Box folder.
+    Returns a list of dicts: [{"filename": ..., "text": ...}]
+    """
+    client = _get_client()
+    folder_id = _get_or_create_folder(client, folder_name)
+    items = client.folders.get_folder_items(folder_id)
+
+    results = []
+    for item in items.entries:
+        if item.name.endswith(".txt"):
+            try:
+                file_content = client.downloads.download_file(item.id)
+                text = file_content.read().decode("utf-8", errors="ignore")
+                results.append({"filename": item.name, "text": text})
+            except Exception:
+                continue
+    return results
+
+
 def _get_or_create_folder(client: BoxClient, folder_name: str) -> str:
     """
     Look for an existing top-level Box folder by name.

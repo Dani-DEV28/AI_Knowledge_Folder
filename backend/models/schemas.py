@@ -23,6 +23,8 @@ class AddWebsiteResponse(BaseModel):
     status: str
     run_id: str
     url: str
+    pages_ingested: Optional[int] = 0
+    message: Optional[str] = None
 
 
 class ChatRequest(BaseModel):

@@ -1,4 +1,5 @@
 from pathlib import Path
+from services.box_service import download_all_text_from_box
 
 SEED_DIR = Path(__file__).parent.parent / "seed"
 CHUNK_SIZE = 500  # words per chunk
@@ -6,41 +7,68 @@ CHUNK_SIZE = 500  # words per chunk
 
 def retrieve_chunks(assistant_id: str, question: str, top_k: int = 5) -> list:
     """
-    MVP keyword retrieval.
-    Loads all .txt files from the seed directory, splits them into chunks,
-    scores each chunk against the question words, and returns the top results.
+    Keyword retrieval from two sources:
+    1. seed/         — pre-loaded RCW text files (always available, local fallback)
+    2. Box folder    — all .txt files in the assistant's Box folder (source of truth)
 
-    Replace with embedding-based search if time allows after core MVP is working.
+    Scores each chunk by word overlap with the question.
+    Returns top_k results sorted by score.
     """
     question_words = set(question.lower().split())
     results = []
 
-    if not SEED_DIR.exists():
-        return []
+    # 1. Seed files (local fallback, always available)
+    if SEED_DIR.exists():
+        for file in SEED_DIR.glob("*.txt"):
+            _score_file_local(file, question_words, results)
 
-    for file in SEED_DIR.glob("*.txt"):
-        text = file.read_text(encoding="utf-8")
-        chunks = _split_chunks(text, CHUNK_SIZE)
-        for chunk in chunks:
-            score = _score(chunk, question_words)
-            if score > 0:
-                results.append(
-                    {
-                        "text": chunk,
-                        "source_title": file.stem.replace("_", " ").title(),
-                        "source_url": "",
-                        "score": score,
-                    }
-                )
+    # 2. Box folder (source of truth for uploaded + crawled content)
+    try:
+        box_files = download_all_text_from_box(assistant_id)
+        for bf in box_files:
+            _score_text(bf["filename"], bf["text"], question_words, results)
+    except Exception:
+        pass  # Box unavailable — fall back to seed only
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
 
 
+def _score_file_local(file: Path, question_words: set, results: list) -> None:
+    """Read a local file, split into chunks, score each."""
+    try:
+        text = file.read_text(encoding="utf-8")
+    except Exception:
+        return
+    _score_text(file.stem, text, question_words, results)
+
+
+def _score_text(source_name: str, text: str, question_words: set, results: list) -> None:
+    """Split text into chunks and score each against question words."""
+    # Extract source URL from first lines if present
+    source_url = ""
+    lines = text.splitlines()
+    for line in lines[:3]:
+        if line.startswith("Source:"):
+            source_url = line.replace("Source:", "").strip()
+            break
+
+    chunks = _split_chunks(text, CHUNK_SIZE)
+    for chunk in chunks:
+        score = _score(chunk, question_words)
+        if score > 0:
+            results.append({
+                "text": chunk,
+                "source_title": source_name.replace("_", " ").title(),
+                "source_url": source_url,
+                "score": score,
+            })
+
+
 def _split_chunks(text: str, chunk_size: int) -> list:
     words = text.split()
     return [
-        " ".join(words[i : i + chunk_size])
+        " ".join(words[i: i + chunk_size])
         for i in range(0, len(words), chunk_size)
     ]
 
