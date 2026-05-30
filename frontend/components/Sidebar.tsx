@@ -42,29 +42,22 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Backdrop overlay on mobile */}
+      {/* Backdrop overlay - closes sidebar on click outside (below desktop) */}
       {open && (
         <div
-          className="d-md-none position-fixed top-0 start-0 w-100 h-100"
+          className="d-lg-none position-fixed top-0 start-0 w-100 h-100"
           style={{ background: "rgba(0,0,0,0.6)", zIndex: 40 }}
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`d-flex flex-column bg-dark-800 border-end border-dark-600 position-fixed position-md-relative h-100 ${
+        className={`d-flex flex-column bg-dark-800 border-end border-dark-600 position-fixed position-lg-relative h-100 ${
           open ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 transition-transform`}
+        } lg:translate-x-0 transition-transform`}
         style={{ width: "288px", zIndex: 50 }}
       >
-        {/* Close button (mobile only) */}
-        <button
-          onClick={onClose}
-          className="d-md-none position-absolute top-0 end-0 mt-2 me-2 text-gray-400 hover:text-white text-lg bg-transparent border-0"
-          aria-label="Close sidebar"
-        >
-          ✕
-        </button>
+        {/* Close button (below desktop) */}
 
         {/* Model/Agent Selector */}
         <div className="p-3 border-bottom border-dark-600">

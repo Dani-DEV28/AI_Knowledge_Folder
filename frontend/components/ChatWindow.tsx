@@ -26,8 +26,8 @@ export default function ChatWindow({ chat, onSend, onOpenSidebar }: ChatWindowPr
 
   return (
     <main className="flex-grow-1 d-flex flex-column bg-dark-900 min-w-0">
-      {/* Header with hamburger on mobile */}
-      <div className="d-md-none p-3 border-bottom border-dark-700">
+      {/* Header with hamburger (below desktop) */}
+      <div className="d-lg-none p-3 border-bottom border-dark-700">
         <button
           onClick={onOpenSidebar}
           className="bg-transparent border-0 text-white fs-5"
